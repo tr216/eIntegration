@@ -20,17 +20,18 @@ module.exports=(app)=>{
 	})
 
 	app.use((err,req, res, next)=>{
-		var error={code:'403',message:''}
-		if(typeof err=='string'){
-			error.message=err
-		}else{
-			error.code=err.code || err.name || 'ERROR'
-			if(err.message)
-				error.message=err.message
-			else
-				error.message=err.name || ''
-		}
-		res.status(403).json({ success:false, error:error})
+		// var error={code:'403',message:''}
+		// if(typeof err=='string'){
+		// 	error.message=err
+		// }else{
+		// 	error.code=err.code || err.name || 'ERROR'
+		// 	if(err.message)
+		// 		error.message=err.message
+		// 	else
+		// 		error.message=err.name || ''
+		// }
+		// res.status(403).json({ success:false, error:error})
+		sendError(err,res)
 	})
 }
 
@@ -74,9 +75,10 @@ function clientControllers(app){
 				break
 				default:
 					throw {code:'Error',message:`'${req.params.service} service was not found`}
+					return
 				break
 			}
-			var ctl=getController(req.params.func)
+			var ctl=getController(serviceName,req.params.func)
 			ctl(repoDb[req.params.dbId], req, res, next, (data)=>{
 				if(data==undefined)
 					res.json({success:true})
@@ -98,11 +100,10 @@ function clientControllers(app){
 	}
 
 	function getController(serviceName,funcName){
-		var controllerName=path.join(__dirname,'../${serviceName}/controllers',`${funcName}.controller.js`)
-		if(fs.existsSync(controllerName)==false){
-			throw {code:'Error',message:`'${serviceName}/${funcName}' controller function was not found`}
+		var controllerName=path.join(__dirname,`../${serviceName}/controllers`,`${funcName}.controller.js`)
+		if(!fs.existsSync(controllerName)){
+			throw {code:'Error',message:`'${serviceName}/${funcName}' controller function was... not found`}
 		}else{
-			
 			return require(controllerName)
 		}
 	}
