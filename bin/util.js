@@ -331,7 +331,7 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 		"eIntegrator",'ioType','despatchErrors','despatchStatus',
 		'localStatus','localErrors','pdf','html','despatchXslt','despatchXsltFiles',
 		'location','location2','subLocation','subLocation2','despatchPeriod',
-		'originatorCustomerParty','localDocumentId'
+		'originatorCustomerParty','localDocumentId','despatchReceiptAdvice'
 		])
     jsObject=exports.deleteObjectProperty(jsObject,'_id')
     jsObject=exports.deleteObjectProperty(jsObject,'identityDocumentReference')

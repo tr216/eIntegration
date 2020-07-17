@@ -229,7 +229,6 @@ exports.logs=(dbModel,despatchDoc,callback)=>{
 	
 	GetDespatchStatusWithLogs([despatchDoc.uuid.value],(err,data)=>{
 		if(!err){
-			tempLog(`GetDespatchStatusWithLogs_response_${despatchDoc.ID.value}.json`,JSON.stringify(data,null,2))
 			callback(null,data.value)
 		}else{
 			callback(err)
@@ -262,6 +261,7 @@ exports.xsltView=(dbModel,despatchDoc,callback)=>{
 		cb(e)
 	}
 }
+
 
 function despatchTime(text){
 	var sbuf='09:13:11.0000000+03:00'

@@ -3,10 +3,10 @@ module.exports = (dbModel, req, res, next, cb)=>{
 		error.param1(req)
     switch(req.method){
         case 'GET':
-        	dbModel.despatches.findOne({_id:req.params.param1},(err,doc)=>{
+        	dbModel.despatches.findOne({_id:req.params.param1}).select('_id ioType uuid ID profileId issueDate issueTime despatchAdviceTypeCode despatchSupplierParty deliveryCustomerParty despatchStatus despatchErrors localStatus localErrors').exec((err,doc)=>{
         		if(dberr(err,next)){
         			if(dbnull(doc,next)){
-        				cb(doc.despatchErrors)
+        				cb(doc)
         			}
         		}
         	})
