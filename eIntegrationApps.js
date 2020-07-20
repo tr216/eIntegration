@@ -41,7 +41,7 @@ module.exports=(cb)=>{
 			global.taskHelper=require('./bin/taskhelper')
 			global.eDespatch=require('./eDespatch/services/e-despatch')
 			global.eInvoice=require('./eInvoice/services/e-invoice')
-			// eDespatch.start()
+			eDespatch.start()
 			// eInvoice.start()
 			cb(null,app)
 
@@ -55,7 +55,7 @@ module.exports=(cb)=>{
 // process.on('uncaughtException', function (err) {
 // 	errorLog('Caught exception: ', err)
 	
-// 	mail.sendErrorMail(`Err ${app.get('name')}`,err,(mailErr,info)=>{
+// 	mail.sendErrorMail(`Err ${config.status} ${app.get('name')}`,err,(mailErr,info)=>{
 // 		if(mailErr)
 // 			console.log(`mailErr:`,mailErr)
 // 		console.log(`mail info:`,info)

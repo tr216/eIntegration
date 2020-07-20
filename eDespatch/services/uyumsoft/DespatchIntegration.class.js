@@ -311,13 +311,13 @@ class DespatchInfo {
     }
     generateXml(){
     	
-    	var xmlDespatchAdvice=util.e_despatch2xml(this.DespatchAdvice,'DespatchAdvice')
-    	xmlDespatchAdvice=xmlDespatchAdvice.replace('<DespatchAdvice','<q1:DespatchAdvice');
-		xmlDespatchAdvice=xmlDespatchAdvice.replace('</DespatchAdvice','</q1:DespatchAdvice');
+    	var xmlData=util.e_despatch2xml(this.DespatchAdvice,'DespatchAdvice')
+    	xmlData=xmlData.replace('<DespatchAdvice','<q1:DespatchAdvice');
+		xmlData=xmlData.replace('</DespatchAdvice','</q1:DespatchAdvice');
     	
-    	var xmlDespatchInfo=`<s:DespatchInfo LocalDocumentId="${this.LocalDocumentId}" ExtraInformation="${this.ExtraInformation}">
+    	var xmlDataInfo=`<s:DespatchInfo LocalDocumentId="${this.LocalDocumentId}" ExtraInformation="${this.ExtraInformation}">
 <s:TargetCustomer Title="${this.TargetCustomer.Title}" VknTckn="${this.TargetCustomer.VknTckn}" Alias="${this.TargetCustomer.Alias}" />
-${xmlDespatchAdvice}
+${xmlData}
 <s:NotificationInformation>
 	<s:MailingInformation EnableNotification="true" To="alitek@gmail.com" BodyXsltIdentifier="" EmailAccountIdentifier="">
 		<s:Subject>tr216 eirsaliye</s:Subject>
@@ -325,23 +325,35 @@ ${xmlDespatchAdvice}
 </s:NotificationInformation>
 </s:DespatchInfo>`
 	
-	return xmlDespatchInfo
+		return xmlDataInfo
+    }
+}
+
+class ReceiptAdviceInfo {
+	constructor(ReceiptAdvice){
+
+		this.ReceiptAdvice=ReceiptAdvice
+		
+	}
+	
+    LocalDocumentId=''
+    TargetCustomer={
+    	Title:'',VknTckn:'',Alias:''
     }
 
-    generateXml2(xmlDespatchAdvice){
+    generateXml(){
+		    	
+    	var xmlData=util.e_receiptAdvice2xml(this.ReceiptAdvice,'ReceiptAdvice')
+    	xmlData=xmlData.replace('<ReceiptAdvice','<q2:ReceiptAdvice');
+		xmlData=xmlData.replace('</ReceiptAdvice','</q2:ReceiptAdvice');
     	
-    	var xmlDespatchInfo=`<s:DespatchInfo LocalDocumentId="${this.LocalDocumentId}" ExtraInformation="${this.ExtraInformation}">
+    	var xmlDataInfo=`<s:ReceiptAdviceTypeInfo LocalDocumentId="${this.LocalDocumentId}" >
 <s:TargetCustomer Title="${this.TargetCustomer.Title}" VknTckn="${this.TargetCustomer.VknTckn}" Alias="${this.TargetCustomer.Alias}" />
-${xmlDespatchAdvice}
-<s:NotificationInformation>
-	<s:MailingInformation EnableNotification="true" To="alitek@gmail.com" BodyXsltIdentifier="" EmailAccountIdentifier="">
-		<s:Subject>tr216 eirsaliye</s:Subject>
-	</s:MailingInformation>
-</s:NotificationInformation>
-</s:DespatchInfo>`
-	
-	return xmlDespatchInfo
-    }
+${xmlData}
+
+</s:ReceiptAdviceTypeInfo>`
+		return xmlDataInfo
+	}
 
 }
 

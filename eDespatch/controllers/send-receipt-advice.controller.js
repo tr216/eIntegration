@@ -1,7 +1,7 @@
 module.exports = (dbModel, req, res, next, cb)=>{
     switch(req.method){
         case 'POST':
-        	send(dbModel,req,res,next,cb)
+        	sendReceiptAdvice(dbModel,req,res,next,cb)
         break
         
         default:
@@ -11,8 +11,8 @@ module.exports = (dbModel, req, res, next, cb)=>{
 
 }
 
-function send(dbModel,req,res,next,cb){
-	var filter={ioType:0}
+function sendReceiptAdvice(dbModel,req,res,next,cb){
+	var filter={ioType:1}
 	if(req.params.param1!=undefined){
 		filter['_id']=req.params.param1
 	}else{
@@ -32,8 +32,12 @@ function send(dbModel,req,res,next,cb){
 			return next({code:'PARAMETER_ERROR',message:'gonderilecek evrak listesi bos'})
 		filter['_id']={$in:idList}
 	}
-	dbModel.despatches.find(filter).populate('eIntegrator').exec((err,docs)=>{
+	filter['despatchReceiptAdvice']={ $type: 7 }
+	console.log(`filter:`,filter)
+	dbModel.despatches.find(filter).select('_id ID uuid ioType issueDate issueTime despatchStatus eIntegrator despatchReceiptAdvice').populate(['eIntegrator','despatchReceiptAdvice']).exec((err,docs)=>{
+		console.log(`err:`,err)
 		if(dberr(err, next)){
+			console.log(`docs.length:`,docs.length)
 			iteration(docs, (doc,cb)=>{ addNewTaskList(dbModel,doc,cb) },0, false, (err)=>{
 				if(!err){
 					cb(`${docs.length} adet evrak kuyruga eklendi`)
@@ -48,16 +52,16 @@ function send(dbModel,req,res,next,cb){
 
 function addNewTaskList(dbModel,doc,cb){
 	var taskData={
-		taskType:'edespatch_send_to_gib',
+		taskType:'edespatch_send_receipt_advice',
 		collectionName:'despatches',
 		documentId:doc._id,
 		document:doc.toJSON(),
 		status:'pending'
 	}
-	console.log('doc._id:',doc._id)
+	
 	taskHelper.newTask(dbModel,taskData,(err,taskDoc)=>{
 		if(!err){
-			dbModel.despatches.updateMany({_id:doc._id},{$set:{despatchStatus:'Pending'}},{multi:false},(err,c)=>{
+			dbModel.despatches_receipt_advice.updateMany({despatch:doc._id},{$set:{receiptAdviceStatus:'Pending'}},{multi:false},(err,c)=>{
 				cb(null,{taskId:taskDoc._id,taskType:taskDoc.taskType,collectionName:taskDoc.collectionName,documentId:taskDoc.documentId,status:taskDoc.status})	
 			})
 			
