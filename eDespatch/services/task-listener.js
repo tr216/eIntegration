@@ -8,7 +8,6 @@ exports.start=(dbModel)=>{
 
 function listen_sendReceiptAdvice(dbModel){
 	var serviceName=`[eDespatch][listen_sendReceiptAdvice]`.yellow
-	eventLog(`${serviceName} calisti`)
 	dbModel.tasks.find({taskType:'edespatch_send_receipt_advice',status:'pending'},(err,docs)=>{
 		if(!err){
 			if(docs.length>0){
@@ -22,7 +21,7 @@ function listen_sendReceiptAdvice(dbModel){
 							})
 						}else{
 							dbModel.tasks.updateMany({_id:item._id},{$set:{status:'error',error:[{code:(err.code || err.name || 'TASK_ERROR'),message:err.message}]}},{multi:false},(err2)=>{
-								dbModel.despatches_receipt_advice.updateMany({despatch:item.documentId},{$set:{receiptAdviceStatus:'Error',receiptAdviceErrors:[{code:(err.code || err.name || 'TASK_ERROR'),message:err.message}]}},{multi:false},(err2)=>{
+								dbModel.despatches_receipt_advice.updateMany({_id:item.documentId},{$set:{receiptStatus:'Error',receiptErrors:[{code:(err.code || err.name || 'TASK_ERROR'),message:err.message}]}},{multi:false},(err2)=>{
 									cb(null)
 								})
 							})

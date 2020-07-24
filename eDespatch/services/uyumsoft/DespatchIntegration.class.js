@@ -329,7 +329,7 @@ ${xmlData}
     }
 }
 
-class ReceiptAdviceInfo {
+class ReceiptAdviceTypeInfo {
 	constructor(ReceiptAdvice){
 
 		this.ReceiptAdvice=ReceiptAdvice
@@ -397,6 +397,7 @@ module.exports={
 	SystemUserFilterContext:SystemUserFilterContext,
 	ReceiptAdviceViewContext:ReceiptAdviceViewContext,
 	DespatchInfo:DespatchInfo,
+	ReceiptAdviceTypeInfo:ReceiptAdviceTypeInfo,
 	CustomerInfo:CustomerInfo,
 	NotificationInformation:NotificationInformation,
 	MailingInformation:MailingInformation,

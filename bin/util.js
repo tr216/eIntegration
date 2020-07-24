@@ -14,20 +14,20 @@ Date.prototype.yyyymmdd = function () {
     var min = this.getMinutes().toString()
     var sec = this.getSeconds().toString()
     return yyyy + '-' + (mm[1]?mm:"0" + mm[0]) + '-' + (dd[1]?dd:"0" + dd[0]) 
-}
+  }
 
-Date.prototype.yyyymmddhhmmss = function (middleChar) {
-	var yyyy = this.getFullYear().toString()
+  Date.prototype.yyyymmddhhmmss = function (middleChar) {
+  	var yyyy = this.getFullYear().toString()
     var mm = (this.getMonth() + 1).toString() // getMonth() is zero-based
     var dd = this.getDate().toString()
     var HH = this.getHours().toString()
     var min = this.getMinutes().toString()
     var sec = this.getSeconds().toString()
     return yyyy + '-' + (mm[1]?mm:"0" + mm[0]) + '-' + (dd[1]?dd:"0" + dd[0]) + (middleChar?middleChar:' ') + (HH[1]?HH:"0" + HH[0]) + ':' + (min[1]?min:"0" + min[0]) + ':' + (sec[1]?sec:"0" + sec[0]) 
-}
+  }
 
-Date.prototype.yyyymmddmilisecond = function () {
-	var yyyy = this.getFullYear().toString()
+  Date.prototype.yyyymmddmilisecond = function () {
+  	var yyyy = this.getFullYear().toString()
     var mm = (this.getMonth() + 1).toString() // getMonth() is zero-based
     var dd = this.getDate().toString()
     var HH = this.getHours().toString()
@@ -35,15 +35,15 @@ Date.prototype.yyyymmddmilisecond = function () {
     var sec = this.getSeconds().toString()
     var msec = this.getMilliseconds().toString()
     return yyyy + '-' + (mm[1]?mm:"0" + mm[0]) + '-' + (dd[1]?dd:"0" + dd[0]) + ' ' + (HH[1]?HH:"0" + HH[0]) + ':' + (min[1]?min:"0" + min[0]) + ':' + (sec[1]?sec:"0" + sec[0]) + '.' + msec 
-}
+  }
 
 
-Date.prototype.addDays = function(days)
-{
-	var dat = new Date(this.valueOf())
-	dat.setDate(dat.getDate() + days)
-	return dat
-}
+  Date.prototype.addDays = function(days)
+  {
+  	var dat = new Date(this.valueOf())
+  	dat.setDate(dat.getDate() + days)
+  	return dat
+  }
 
 
 
@@ -329,36 +329,51 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 		                                    "eIntegrator",'ioType','despatchErrors','despatchStatus',
 		                                    'localStatus','localErrors','pdf','html','despatchXslt','despatchXsltFiles',
 		                                    'location','location2','subLocation','subLocation2','despatchPeriod',
-		                                    'originatorCustomerParty','localDocumentId','despatchReceiptAdvice'
+		                                    'originatorCustomerParty','localDocumentId','receiptAdvice'
 		                                    ])
 		jsObject=exports.deleteObjectProperty(jsObject,'_id')
 		jsObject=exports.deleteObjectProperty(jsObject,'identityDocumentReference')
 		jsObject=exports.deleteObjectProperty(jsObject,'financialAccount')
 		jsObject=exports.deleteObjectProperty(jsObject,'otherCommunication')
+		jsObject=exports.deleteObjectProperty(jsObject,'images')
+		jsObject=exports.deleteObjectProperty(jsObject,'files')
+		jsObject=exports.deleteObjectProperty(jsObject,'passive')
+		jsObject=exports.deleteObjectProperty(jsObject,'localDocumentId')
 
+		jsObject=exports.cleanElementWhoHasEmptyID(jsObject)
+		if(jsObject.issueTime.value==''){
+			jsObject.issueTime.value=='13:00:00'
+		}
+		if(jsObject.issueTime.value.length==5){
+			jsObject.issueTime.value+=':00'
+		}
+		if(jsObject.deliveryCustomerParty.party.partyIdentification){
+			jsObject.deliveryCustomerParty.party.partyIdentification.forEach((e)=>{
+				e.ID.value=e.ID.value.replaceAll(' ','')
+			})
+		}
 
-		if(jsObject.despatchLine!=undefined){
-
-			jsObject.despatchLine.forEach((line)=>{
-				if(line.taxTotal!=undefined){
-					if(line.taxTotal.taxAmount!=undefined){
-						if(line.taxTotal.taxAmount.value==0 && line.taxTotal.taxSubTotal==undefined){
-							line.taxTotal=undefined
-							delete line.taxTotal
-
-						}
+		if(jsObject.despatchLine){
+			jsObject.despatchLine.forEach((line,index)=>{
+				if(line.item.originCountry!=undefined){
+					if(line.item.originCountry.name.value==''){
+						line.item.originCountry=undefined
+						delete line.item.originCountry
 					}
 				}
-				if(line.item)
-					if(line.item.originCountry)
-						if(line.item.originCountry.identificationCode)
-							if((line.item.originCountry.identificationCode.value || '')==''){
-								line.item.originCountry=undefined
-								delete line.item.originCountry
-								eventLog('calisti delete line.item.originCountry')
-							}
-						})
+				if(line.orderLineReference.lineId.value=''){
+					line.orderLineReference=undefined
+					delete line.orderLineReference
+				}
+				if(line.outstandingQuantity!=undefined){
+					line.outstandingQuantity.attr.unitCode=line.deliveredQuantity.attr.unitCode
+				}
+				if(line.oversupplyQuantity!=undefined){
+					line.oversupplyQuantity.attr.unitCode=line.deliveredQuantity.attr.unitCode
+				}
+			})
 		}
+		tempLog('jsObject.json',JSON.stringify(jsObject,null,2))
 
 		jsObject=eIntegrationPrepareXml(jsObject)
 
@@ -403,7 +418,6 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 			}
 		})
 		var xmlString=js2xmlparser.parse(rootName, obj, options)
-		xmlString=xmlString.replace('</cbc:ID>','</cbc:ID><cbc:CopyIndicator>false</cbc:CopyIndicator>')
 		xmlString=xmlString.replaceAll('<cbc:TaxExemptionReason/>','')
 		xmlString=xmlString.replaceAll('<cbc:TaxExemptionReasonCode/>','')
 		xmlString=xmlString.replaceAll('<cbc:IssueDate/>','')
@@ -416,8 +430,6 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 
 exports.e_receiptAdvice2xml=function(doc,rootName='ReceiptAdviceInfo'){
 	try{
-
-
 		var jsObject=JSON.parse(JSON.stringify(doc))
 
 		jsObject=exports.deleteObjectFields(jsObject,[
@@ -428,11 +440,7 @@ exports.e_receiptAdvice2xml=function(doc,rootName='ReceiptAdviceInfo'){
 		jsObject=exports.deleteObjectProperty(jsObject,'identityDocumentReference')
 		jsObject=exports.deleteObjectProperty(jsObject,'financialAccount')
 		jsObject=exports.deleteObjectProperty(jsObject,'otherCommunication')
-		// if(jsObject.receiptAdviceLineInfos!=undefined){
-
-		// 	jsObject.receiptAdviceLineInfos.forEach((line)=>{
-		// 	})
-		// }
+		
 
 		jsObject=eIntegrationPrepareXml(jsObject)
 
@@ -462,11 +470,11 @@ exports.e_receiptAdvice2xml=function(doc,rootName='ReceiptAdviceInfo'){
 			'xmlns:cbc' : 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2' ,
 			'xmlns:xades' : 'http://uri.etsi.org/01903/v1.3.2#',
 			'xsi:schemaLocation':'urn:oasis:names:specification:ubl:schema:xsd:DespatchAdvice-2 UBL-DespatchAdvice-2.1.xsd',
-			'xmlns:q1' : 'urn:oasis:names:specification:ubl:schema:xsd:ReceiptAdvice-2'
+			'xmlns:q2' : 'urn:oasis:names:specification:ubl:schema:xsd:ReceiptAdvice-2'
 		}
 
 		var obj={
-			'attr':despatchAttr,
+			'attr':receiptAdviceAttr,
 			'cbc:UBLVersionID':'2.1',
 			'cbc:CustomizationID':'TR1.2.1',
 			'cbc:CopyIndicator':'false'
@@ -484,6 +492,7 @@ exports.e_receiptAdvice2xml=function(doc,rootName='ReceiptAdviceInfo'){
 	}catch(tryErr){
 		console.error('e_receiptAdvice2xml.tryErr',tryErr)
 	}
+
 }
 
 
@@ -528,24 +537,23 @@ function receiptAdvicePrepareXml(obj){
 	}else{
 		return obj
 	}
-
-
-	function renameKeyForReceiptAdvice(key){
-
-		switch(key){
-			case 'uuid': return 'UUID'
-			case 'id': return 'ID'
-			case 'uri': return 'URI'
-	        //case 'attr': return '@'
-	    }
-	    if(key.length<2) return key
-	    	key=key[0].toUpperCase() + key.substr(1,key.length-1)
-	    if(key.substr(key.length-2,2)=='Id' && key.length>2){
-	    	key=key.substr(0,key.length-2) + 'Id'
-	    }
-	    return key
-	}
 }
+
+function renameKeyForReceiptAdvice(key){
+
+	switch(key){
+		case 'uuid': return 'UUID'
+		case 'id': return 'ID'
+		case 'uri': return 'URI'
+	}
+	if(key.length<2) return key
+		key=key[0].toUpperCase() + key.substr(1,key.length-1)
+	if(key.substr(key.length-2,2)=='Id' && key.length>2){
+		key=key.substr(0,key.length-2) + 'Id'
+	}
+	return key
+}
+
 exports.amountValueFixed2Digit=function(obj,parentKeyName){
 	if ( typeof(obj) === 'undefined' || obj === null )
 		return obj
@@ -640,66 +648,68 @@ exports.deleteObjectFields = function (obj,fields) {
 		}
 	}
 
-	if(obj==undefined || fields==undefined) return obj
-		if(obj==null || fields==null) return obj
+	if(obj==undefined || fields==undefined)
+		return obj
+	if(obj==null || fields==null)
+		return obj
 
-			for(var key in obj){
+	for(var key in obj){
 
-				if(fields.indexOf(key.toString())>=0){
-					obj[key]=undefined
-					delete obj[key]
-				}
-
-			}
-
-			return obj
+		if(fields.indexOf(key.toString())>=0){
+			obj[key]=undefined
+			delete obj[key]
 		}
 
+	}
+
+	return obj
+}
 
 
-		exports.deleteObjectProperty=function(obj,propertyName){
-			if(obj==null) return {}
 
-				if(Array.isArray(obj)){
-        // eventLog('typeof obj: array[] length:',obj.length)
-        var newObj=[]
-        obj.forEach((e)=>{
-        	newObj.push(exports.deleteObjectProperty(e,propertyName))
-        })
-        return newObj
-    }else if (typeof obj==='object'){
-    	var newObj={}
+exports.deleteObjectProperty=function(obj,propertyName){
+	if(obj==null)
+		return {}
 
-    	if(obj[propertyName]!=undefined){
-    		obj[propertyName]=undefined
-    		delete obj[propertyName]
-    	}
-    	if(propertyName.indexOf('*')>-1){
-    		var keys=Object.keys(obj)
-    		var s=propertyName.replaceAll('*','')
-    		keys.forEach((e)=>{
-    			if(e.indexOf(s)>-1){
-    				obj[e]=undefined
-    				delete obj[e]
-    			}
-    		})
-    	}
+	if(Array.isArray(obj)){
+		var newObj=[]
+		obj.forEach((e)=>{
+			newObj.push(exports.deleteObjectProperty(e,propertyName))
+		})
+		return newObj
+	}else if (typeof obj==='object'){
+		var newObj={}
 
-    	var keys=Object.keys(obj)
-    	keys.forEach((key)=>{
+		if(obj[propertyName]!=undefined){
+			obj[propertyName]=undefined
+			delete obj[propertyName]
+		}
+		if(propertyName.indexOf('*')>-1){
+			var keys=Object.keys(obj)
+			var s=propertyName.replaceAll('*','')
+			keys.forEach((e)=>{
+				if(e.indexOf(s)>-1){
+					obj[e]=undefined
+					delete obj[e]
+				}
+			})
+		}
+
+		var keys=Object.keys(obj)
+		keys.forEach((key)=>{
             // eventLog('key:',key)
             if(Array.isArray(obj[key]) || typeof obj[key]==='object'){
                 // eventLog('typeof obj:',(typeof obj),key)
                 newObj[key]=exports.deleteObjectProperty(obj[key],propertyName)
-            }else{
-            	newObj[key]=obj[key]
-            }
-        })
+              }else{
+              	newObj[key]=obj[key]
+              }
+            })
 
-    	return newObj
-    }else{
-    	return obj
-    }
+		return newObj
+	}else{
+		return obj
+	}
 }
 
 exports.eInvoiceRenameKeys=(key)=>{
@@ -708,14 +718,70 @@ exports.eInvoiceRenameKeys=(key)=>{
 		case 'uuid': return 'UUID'
 		case 'id': return 'ID'
 		case 'uri': return 'URI'
-        //case 'attr': return '@'
-    }
-    if(key.length<2) return key
-    	key=key[0].toUpperCase() + key.substr(1,key.length-1)
-    if(key.substr(key.length-2,2)=='Id' && key.length>2){
-    	key=key.substr(0,key.length-2) + 'ID'
-    }
-    return key
+	}
+	if(key.length<2) return key
+		key=key[0].toUpperCase() + key.substr(1,key.length-1)
+	if(key.substr(key.length-2,2)=='Id' && key.length>2){
+		key=key.substr(0,key.length-2) + 'ID'
+	}
+	return key
+}
+
+
+global.b64EncodeUnicode=(str)=>{
+	return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
+	                                            function toSolidBytes(match, p1) {
+	                                            	return String.fromCharCode('0x' + p1)
+	                                            }))
+}
+
+global.b64DecodeUnicode=(str)=>{
+	return decodeURIComponent(atob(str).split('').map(function(c) {
+		return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+	}).join(''))
+}
+
+
+global.encodeURIComponent2=(str)=>{
+	return encodeURIComponent(str).replace(/[!'()*]/g, escape)
 }
 
 global.ioBox=(ioType)=>{ return ioType==0?'Outbox':'Inbox'}
+
+
+exports.cleanElementWhoHasEmptyID=function(obj){
+	if(obj==null)
+		return {}
+
+	if(Array.isArray(obj)){
+		var newObj=[]
+		obj.forEach((e)=>{
+			var b=exports.cleanElementWhoHasEmptyID(e)
+			if(b){
+				newObj.push(b)
+			}
+		})
+		return newObj
+	}else if (typeof obj==='object'){
+		var newObj={}
+		if(obj.hasOwnProperty('ID')){
+			if(obj.ID.value==''){
+				return undefined
+			}
+			//console.log(`obj.ID:`,obj.ID)
+		}
+
+		var keys=Object.keys(obj)
+		keys.forEach((key)=>{
+			if(Array.isArray(obj[key]) || typeof obj[key]==='object'){
+				newObj[key]=exports.cleanElementWhoHasEmptyID(obj[key])
+			}else{
+				newObj[key]=obj[key]
+			}
+		})
+
+		return newObj
+	}else{
+		return obj
+	}
+}

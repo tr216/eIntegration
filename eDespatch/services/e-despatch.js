@@ -292,11 +292,17 @@ exports.sendToGib=(dbModel,despatchDoc,cb)=>{
 		exports.getXslt(dbModel,despatchDoc,(err,xsltData)=>{
 			if(!err){
 				var webService=new SinifGrubu.DespatchIntegration(despatchDoc.eIntegrator.despatch.url,despatchDoc.eIntegrator.despatch.username,despatchDoc.eIntegrator.despatch.password)
-				despatchDoc.despatchSupplierParty.party=despatchDoc.eIntegrator.party
-				despatchDoc.sellerSupplierParty.party=despatchDoc.eIntegrator.party
-				despatchDoc.buyerCustomerParty.party=despatchDoc.deliveryCustomerParty.party
-				if(despatchDoc.uuid.value=='')
-					despatchDoc.uuid.value=uuid.v4()
+				despatchDoc.despatchSupplierParty.party=clone(despatchDoc.eIntegrator.party)
+				despatchDoc.sellerSupplierParty.party=clone(despatchDoc.eIntegrator.party)
+
+				if(despatchDoc.deliveryCustomerParty.party.postalAddress.country.identificationCode.value==''){
+					despatchDoc.deliveryCustomerParty.party.postalAddress.country.identificationCode.value='TR'
+				}
+				despatchDoc.buyerCustomerParty.party=clone(despatchDoc.deliveryCustomerParty.party)
+
+				// if(despatchDoc.uuid.value=='' || despatchDoc.despatchStatus=='Error')
+				despatchDoc.uuid.value=uuid.v4()
+				
 				if(xsltData){
 					despatchDoc.additionalDocumentReference=[{
 						ID:{value:uuid.v4()},
@@ -330,12 +336,15 @@ exports.sendToGib=(dbModel,despatchDoc,cb)=>{
 
 				var despatchInfo=new SinifGrubu.DespatchInfo(despatchDoc)
 				var xmlstr=despatchInfo.generateXml()
-				
+				var parseString = require('xml2js').parseString
+
 				tempLog(`sendToGib_request_${despatchDoc.ID.value}.xml`,xmlstr)
-				/* DespatchInfo[] despatches */
+
+				// /* DespatchInfo[] despatches */
 				webService.SendDespatch([xmlstr],(err,data)=>{
 					if(!err){
 						tempLog(`sendToGib_response_${despatchDoc.ID.value}.json`,JSON.stringify(data,null,2))
+
 						dbModel.despatches.updateMany({_id:despatchDoc._id},{
 							$set:{
 								despatchStatus:'Queued',
@@ -367,51 +376,41 @@ exports.sendToGib=(dbModel,despatchDoc,cb)=>{
 	
 }
 
-exports.sendReceiptAdvice=(dbModel,despatchDocument,cb)=>{
+exports.sendReceiptAdvice=(dbModel,receiptAdviceDoc,cb)=>{
 	try{
-		var receiptAdviceDoc=despatchDocument.despatchReceiptAdvice
-		var webService=new SinifGrubu.DespatchIntegration(despatchDocument.eIntegrator.despatch.url,despatchDocument.eIntegrator.despatch.username,despatchDocument.eIntegrator.despatch.password)
-
-
-		if(receiptAdviceDoc.receiptAdviceNumber.value=='')
-			receiptAdviceDoc.receiptAdviceNumber.value=uuid.v4()
-
-		var receiptAdviceInfo=new SinifGrubu.ReceiptAdviceInfo(receiptAdviceDoc)
-		var xmlstr=receiptAdviceInfo.generateXml()
 		
-		var xmlstr=util.e_receiptAdvice2xml(receiptAdviceDoc,'ReceiptAdviceInfo')
+		var webService=new SinifGrubu.DespatchIntegration(receiptAdviceDoc.eIntegrator.despatch.url,receiptAdviceDoc.eIntegrator.despatch.username,receiptAdviceDoc.eIntegrator.despatch.password)
+
+
+		if(receiptAdviceDoc.uuid.value=='')
+			receiptAdviceDoc.uuid.value=uuid.v4()
+
+		var receiptAdviceTypeInfo=new SinifGrubu.ReceiptAdviceTypeInfo(receiptAdviceDoc)
+		var xmlstr=receiptAdviceTypeInfo.generateXml()
+		
+		
 
 		tempLog(`sendReceiptAdvice_request_${receiptAdviceDoc._id}.xml`,xmlstr)
 
 		/* ReceiptAdviceInfo[] receiptAdvices */
-		webService.SendReceiptAdvice([xmlstr],(err,data)=>{
+		webService.SendReceiptAdviceUbl([xmlstr],(err,data)=>{
 			if(!err){
 				tempLog(`SendReceiptAdvice_response_${receiptAdviceDoc._id}.json`,JSON.stringify(data,null,2))
-				if(data.attr.value){
-					webService.SetDespatchesTaken([receiptAdviceDoc.inboxDespatchId.value],(err,data)=>{
-						if(!err){
-							tempLog(`SetDespatchesTaken_response_${receiptAdviceDoc._id}.json`,JSON.stringify(data,null,2))
-							dbModel.despatches_receipt_advice.updateMany({_id:receiptAdviceDoc._id},{
-								$set:{
-									receiptAdviceStatus:'Sent',
-									receiptAdviceNumber:{value:receiptAdviceDoc.receiptAdviceNumber.value}
-								}
-							},{multi:false},(err)=>{
-								if(!err){
-									cb(null,data.value)
-								}else{
-									cb(err)
-								}
-							})
-						}else{
-							tempLog(`SetDespatchesTaken_response_${receiptAdviceDoc._id}.json`,JSON.stringify(err,null,2))
-							errorLog(`${serviceName} Hata:`,err)
-							cb(err)
-						}
-						
+				
 
-					})
-				}
+				dbModel.despatches_receipt_advice.updateMany({_id:receiptAdviceDoc._id},{
+					$set:{
+						receiptStatus:'Success',
+						'uuid.value':receiptAdviceDoc.uuid.value
+					}
+				},{multi:false},(err)=>{
+					if(!err){
+						cb(null,data.value)
+					}else{
+						cb(err)
+					}
+				})
+
 				
 			}else{
 				tempLog(`SendReceiptAdvice_response_err_${receiptAdviceDoc._id}.json`,JSON.stringify(err,null,2))
@@ -568,16 +567,17 @@ function repeatCheckDespatcheStatus(dbModel){
 exports.start=()=>{
 	setTimeout(()=>{
 		Object.keys(repoDb).forEach((e)=>{
-			// repeatDownloadDespatches(repoDb[e])
-			// eventLog(`${serviceName} download working on ${repoDb[e].dbName.cyan}`)
+			repeatDownloadDespatches(repoDb[e])
+			eventLog(`${serviceName} download working on ${repoDb[e].dbName.cyan}`)
 
-			// repeatCheckDespatcheStatus(repoDb[e])
-			// eventLog(`${serviceName} checkStatus working on ${repoDb[e].dbName.cyan}`)
+			repeatCheckDespatcheStatus(repoDb[e])
+			eventLog(`${serviceName} checkStatus working on ${repoDb[e].dbName.cyan}`)
 
 			taskListener.start(repoDb[e])
 			eventLog(`${serviceName} tasks listening on ${repoDb[e].dbName.cyan}`)
 
 		})
 
-	},10000)
+	},10000) // qwerty
+	// },1000)
 }
