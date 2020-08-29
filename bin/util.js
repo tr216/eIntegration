@@ -341,12 +341,16 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 		jsObject=exports.deleteObjectProperty(jsObject,'localDocumentId')
 
 		jsObject=exports.cleanElementWhoHasEmptyID(jsObject)
-		if(jsObject.issueTime.value==''){
-			jsObject.issueTime.value=='13:00:00'
+
+		if(jsObject.issueTime!=undefined){
+			if(jsObject.issueTime.value==''){
+				jsObject.issueTime.value=='13:00:00'
+			}
+			if(jsObject.issueTime.value.length==5){
+				jsObject.issueTime.value+=':00'
+			}
 		}
-		if(jsObject.issueTime.value.length==5){
-			jsObject.issueTime.value+=':00'
-		}
+		
 		if(jsObject.deliveryCustomerParty.party.partyIdentification){
 			jsObject.deliveryCustomerParty.party.partyIdentification.forEach((e)=>{
 				e.ID.value=e.ID.value.replaceAll(' ','')
