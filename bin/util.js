@@ -340,6 +340,9 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 		jsObject=exports.deleteObjectProperty(jsObject,'passive')
 		jsObject=exports.deleteObjectProperty(jsObject,'localDocumentId')
 
+		if(jsObject.shipment!=undefined){
+			jsObject.shipment['ID']={value:'1'}
+		}
 		jsObject=exports.cleanElementWhoHasEmptyID(jsObject)
 
 		if(jsObject.issueTime!=undefined){
