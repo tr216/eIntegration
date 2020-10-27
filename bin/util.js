@@ -356,7 +356,7 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 		
 		if(jsObject.deliveryCustomerParty.party.partyIdentification){
 			jsObject.deliveryCustomerParty.party.partyIdentification.forEach((e)=>{
-				e.ID.value=e.ID.value.replaceAll(' ','')
+				e.ID.value=e.ID.value.replace(/\D/g, '')
 			})
 		}
 
@@ -431,6 +431,7 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 		xmlString=xmlString.replaceAll('[object Object]','')
 		return xmlString
 	}catch(tryErr){
+		tempLog(`hatali_despatch_${doc._id.toString()}.json`,JSON.stringify(doc,null,2))
 		console.error('e_despatch2xml.tryErr',tryErr)
 	}
 }

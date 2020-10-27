@@ -1,5 +1,5 @@
 var processList=[]
-var repeatInterval=60000*10
+var repeatInterval=10000
 var SinifGrubu=require('./uyumsoft/DespatchIntegration.class.js')
 var downloadInterval=5000 
 
@@ -295,6 +295,10 @@ exports.sendToGib=(dbModel,despatchDoc,cb)=>{
 				despatchDoc.despatchSupplierParty.party=clone(despatchDoc.eIntegrator.party)
 				despatchDoc.sellerSupplierParty.party=clone(despatchDoc.eIntegrator.party)
 
+				if(despatchDoc.deliveryCustomerParty.party['partyIdentification[0]']!=undefined){
+					despatchDoc.deliveryCustomerParty.party['partyIdentification[0]']=undefined
+					delete despatchDoc.deliveryCustomerParty.party['partyIdentification[0]']
+				}
 				if(despatchDoc.deliveryCustomerParty.party.postalAddress.country.identificationCode.value==''){
 					despatchDoc.deliveryCustomerParty.party.postalAddress.country.identificationCode.value='TR'
 				}
