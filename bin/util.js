@@ -368,10 +368,15 @@ exports.e_despatch2xml=function(doc,rootName='DespatchAdvice'){
 						delete line.item.originCountry
 					}
 				}
-				if(line.orderLineReference.lineId.value=''){
-					line.orderLineReference=undefined
-					delete line.orderLineReference
+				if(line.orderLineReference){
+					if(line.orderLineReference.lineId){
+						if(line.orderLineReference.lineId.value=''){
+							line.orderLineReference=undefined
+							delete line.orderLineReference
+						}
+					}
 				}
+				
 				if(line.outstandingQuantity!=undefined){
 					line.outstandingQuantity.attr.unitCode=line.deliveredQuantity.attr.unitCode
 				}
